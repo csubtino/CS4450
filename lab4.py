@@ -18,7 +18,7 @@ class Display:
       self.Font = pygame.font.SysFont('Calibri', 16)
       self.Screen = pygame.display.set_mode((self.Width, self.Height))
  
-   def Run(self, cluster, fn):
+   def Run(self, cluster, fn, label, filename):
       done = False
       
       while not done:
@@ -28,13 +28,15 @@ class Display:
    
          fn()
          self.Screen.fill(self.BackgroundColor)
+         text = self.Font.render(label, True, (0x0, 0x0, 0x0))
+         self.Screen.blit(text, (10, 10, 0, 0))
          self.DrawDendrogram(cluster.Root, pygame.Rect(20, 40, 720, 540))
          pygame.time.wait(self.FrameDelay)
          pygame.display.flip()
          if cluster.Finished():
             if not os.path.isdir('lab4_images'):
                os.mkdir('lab4_images')
-            pygame.image.save(self.Screen, 'lab4_images\lab4.png')
+            pygame.image.save(self.Screen, os.path.join('lab4_images', filename))
             return
       
    def DrawDendrogram(self, node, rect):
@@ -196,6 +198,7 @@ class Point:
 class Cluster:
    def __init__(self):
       self.Root = Node()
+      self.DistanceFunction = None
 
    def Add(self, node):
       self.Root.AddChild(node)
@@ -220,7 +223,8 @@ class Cluster:
 
       for i in range(len(self.Root.Children)):
          for j in range(i + 1, len(self.Root.Children)):
-            self.Proximity[i][j] = self.Root.Children[i].CentroidDistance(self.Root.Children[j])
+            self.Proximity[i][j] = self.DistanceFunction(self.Root.Children[i], self.Root.Children[j])
+            #self.Proximity[i][j] = self.Root.Children[i].CentroidDistance(self.Root.Children[j])
 
    def PrintProximity(self):
       for i in range(len(self.Proximity)):
@@ -271,12 +275,30 @@ if __name__ == '__main__':
    dataCluster = Cluster()
    any(dataCluster.Add(Node(Point(i, float(data[i][0]), float(data[i][1])))) for i in range(len(data)))
    dataCluster.Normalize()
+   dataCluster.DistanceFunction = Node.MinDistance
+   display.Run(dataCluster, dataCluster.Update, "Min", "lab4_min.png")
+   
+   dataCluster = Cluster()
+   any(dataCluster.Add(Node(Point(i, float(data[i][0]), float(data[i][1])))) for i in range(len(data)))
+   dataCluster.Normalize()
+   dataCluster.DistanceFunction = Node.MaxDistance
+   display.Run(dataCluster, dataCluster.Update, "Max", "lab4_max.png")
 
-   testCluster = Cluster()
-   testCluster.Add(Node(Point(0, 0.25, 0.25)))
-   testCluster.Add(Node(Point(1, 0.50, 0.50)))
-   testCluster.Add(Node(Point(2, 0.75, 0.75)))
-   testCluster.Normalize()
-
-   display.Run(dataCluster, dataCluster.Update)
+   dataCluster = Cluster()
+   any(dataCluster.Add(Node(Point(i, float(data[i][0]), float(data[i][1])))) for i in range(len(data)))
+   dataCluster.Normalize()
+   dataCluster.DistanceFunction = Node.GroupAverageDistance
+   display.Run(dataCluster, dataCluster.Update, "Group Average", "lab4_group.png")
+   
+   dataCluster = Cluster()
+   any(dataCluster.Add(Node(Point(i, float(data[i][0]), float(data[i][1])))) for i in range(len(data)))
+   dataCluster.Normalize()
+   dataCluster.DistanceFunction = Node.CentroidDistance
+   display.Run(dataCluster, dataCluster.Update, "Centroid", "lab4_centroid.png")
+   
+   #testCluster = Cluster()
+   #testCluster.Add(Node(Point(0, 0.25, 0.25)))
+   #testCluster.Add(Node(Point(1, 0.50, 0.50)))
+   #testCluster.Add(Node(Point(2, 0.75, 0.75)))
+   #testCluster.Normalize()
    #display.Run(testCluster, testCluster.Update)
